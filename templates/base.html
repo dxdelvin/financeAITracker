@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Money Monitor AI</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/transaction.css' %}">
+
+</head>
+<body>
+    <div class="container">
+        <!-- Left Column -->
+        <main class="main-content">
+            {% block main_content %}
+            <!-- Your main content here -->
+            {% endblock %}
+        </main>
+
+        <!-- Right Column -->
+        <aside class="ai-sidebar">
+            {% block ai_sidebar %}
+            <h2>Future Insights</h2>
+            <div class="ai-placeholder">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                <p style="margin-top: 1rem;">AI-Powered Financial Insights</p>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem;">Coming Soon</p>
+            </div>
+            {% endblock %}
+        </aside>
+    </div>
+
+
+<script src="{% static 'js/base.js' %}"></script>
+</body>
+</html>

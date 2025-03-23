@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block main_content %}
+<div>
+    <nav class="nav-header">
+                <h1>AI MoneyMonitor</h1>
+                <div class="nav-links">
+                    <a href="#">Home</a>
+                    <a href="#">History</a>
+                    <a href="#">Reports</a>
+                </div>
+            </nav>
+
+           <div class="dashboard-summary">
+                <div class="summary-card">
+                    <h3>Current Balance</h3>
+                    <h2>${{ balance |floatformat:2 }}</h2>
+                </div>
+                <div class="summary-card">
+                    <h3>Monthly Income</h3>
+                    <h2 style="color: var(--secondary-green);">${{ total_income|floatformat:2 }}</h2>
+                </div>
+                <div class="summary-card">
+                    <h3>Monthly Expenses</h3>
+                    <h2 style="color: #ef4444;">${{ total_expenses|floatformat:2 }}</h2>
+                </div>
+            </div>
+
+
+            <button class="add-transaction-btn" id="openTransactionForm">+ Add Transaction</button>
+
+                    <div class="transaction-form-overlay" id="transactionFormOverlay">
+                    <div class="transaction-form">
+                        <h3>Add Transaction</h3>
+                        <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="{{ form.amount.id_for_label }}">Amount</label>
+                            {{ form.amount }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.category.id_for_label }}">Category</label>
+                            {{ form.category }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.transaction_type.id_for_label }}">Transaction Type</label>
+                            {{ form.transaction_type }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.date_created.id_for_label }}">Date Created</label>
+                            {{ form.date_created }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.comment.id_for_label }}">Comment</label>
+                            {{ form.comment }}
+                        </div>
+
+                        <div class="form-buttons">
+                            <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+                            <button type="submit" class="save-btn">Save</button>
+                        </div>
+                    </form>
+                    </div>
+                </div>
+
+
+            <div class="transaction-list">
+            <h3>Recent Transactions</h3>
+            {% if transactions %}
+                {% for transaction in transactions %}
+                    <div class="transaction-item">
+                        <div class="transaction-category">{{ transaction.category }}: {{ transaction.amount }}</div>
+                        <div class="transaction-type {{ transaction.transaction_type }}">{{ transaction.transaction_type }}</div>
+                        <div class="transaction-date">{{ transaction.date_created|date:"F j, Y" }}</div>
+                        <form method="POST" action="{% url 'delete_transaction' transaction.id %}">
+                            {% csrf_token %}
+                            <button class="delete-btn" type="submit">❌</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No transactions recorded yet. Add some!</p>
+            {% endif %}
+        </div>
+
+</div>
+{% endblock %}
+
+{% block ai_sidebar %}
+{{ block.super }}
+<!-- You can add extra content here if needed, or simply leave it as the base content -->
+{% endblock %}
