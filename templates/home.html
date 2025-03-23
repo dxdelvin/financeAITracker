@@ -1,12 +1,25 @@
 {% extends "base.html" %}
 {% block main_content %}
 <div>
+    {% if messages %}
+    {% for message in messages %}
+    <div class="error">
+        {{ message }}<br>
+        {% if message.extra_tags %}{{ message.extra_tags }}{% endif %}
+    </div>
+    {% endfor %}
+{% endif %}
+    <div id="form-initial-data"
+     data-has-initial="{% if form.initial %}true{% else %}false{% endif %}"
+     style="display: none;">
+</div>
     <nav class="nav-header">
+
                 <h1>AI MoneyMonitor</h1>
                 <div class="nav-links">
                     <a href="#">Home</a>
                     <a href="#">History</a>
-                    <a href="#">Reports</a>
+                    <a href="/reports">Reports</a>
                 </div>
             </nav>
 
@@ -26,41 +39,59 @@
             </div>
 
 
-            <button class="add-transaction-btn" id="openTransactionForm">+ Add Transaction</button>
+           <button class="add-transaction-btn"  id="openTransactionForm1">+ Add Transaction</button>
 
-                    <div class="transaction-form-overlay" id="transactionFormOverlay">
-                    <div class="transaction-form">
-                        <h3>Add Transaction</h3>
-                        <form method="POST">
+            <div class="transaction-form-overlay" id="transactionFormOverlay1">
+            <div class="transaction-form">
+                <h3>Add Transaction</h3>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="{{ form.amount.id_for_label }}">Amount</label>
+                        {{ form.amount }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.category.id_for_label }}">Category</label>
+                        {{ form.category }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.transaction_type.id_for_label }}">Type</label>
+                        {{ form.transaction_type }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.date_created.id_for_label }}">Date</label>
+                        {{ form.date_created }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.comment.id_for_label }}">Comment</label>
+                        {{ form.comment }}
+                        <div id="charCount" class="char-count">0/200</div>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="button" class="cancel-btn" id="cancelBtn1">Cancel</button>
+                        <button type="submit" class="save-btn" name="add_transaction">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+            <button class="add-transaction-btn" id="openTransactionForm2">+ Add AI Description</button>
+
+            <div class="transaction-form-overlay" id="transactionFormOverlay2">
+                <div class="transaction-form">
+                    <h3>AI Describe Transaction</h3>
+                    <form method="post">
                         {% csrf_token %}
                         <div class="form-group">
-                            <label for="{{ form.amount.id_for_label }}">Amount</label>
-                            {{ form.amount }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.category.id_for_label }}">Category</label>
-                            {{ form.category }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.transaction_type.id_for_label }}">Transaction Type</label>
-                            {{ form.transaction_type }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.date_created.id_for_label }}">Date Created</label>
-                            {{ form.date_created }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.comment.id_for_label }}">Comment</label>
-                            {{ form.comment }}
-                        </div>
-
-                        <div class="form-buttons">
-                            <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
-                            <button type="submit" class="save-btn">Save</button>
-                        </div>
+                        <textarea name="ai_description" placeholder="Describe your transaction"></textarea>
+                            <div class="form-buttons">
+                        <button type="button" class="cancel-btn" id="cancelBtn2">Cancel</button>
+                        <button type="submit" class="save-btn" name="ai_describe_transaction">Describe Transaction</button>
+                         </div></div>
                     </form>
-                    </div>
                 </div>
+            </div>
+
 
 
             <div class="transaction-list">
