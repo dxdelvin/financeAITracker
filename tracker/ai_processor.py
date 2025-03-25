@@ -8,6 +8,8 @@ import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 import heapq
+from nltk.probability import FreqDist
+import string
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -172,34 +174,47 @@ class TransactionParser:
         income_keywords = ['salary', 'income', 'received', 'payment', 'refund']
         return 'Income' if any(kw in text_lower for kw in income_keywords) else 'Expense'
 
-    def _generate_summary(self, text, category, amount):
-        if not text or amount is None:
-            return "Invalid transaction"
 
-        stop_words = set(stopwords.words("english"))
-        words = word_tokenize(text.lower())
 
-        word_frequencies = {}
-        for word in words:
-            if word not in stop_words and word.isalnum():
-                word_frequencies[word] = word_frequencies.get(word, 0) + 1
+    def _generate_summary(self, text, category=None, amount=None):
 
-        max_freq = max(word_frequencies.values()) if word_frequencies else 1
-        for word in word_frequencies:
-            word_frequencies[word] /= max_freq
+        if not text or not isinstance(text, str):
+            base = "Payment"
+            if category:
+                base += f" for {category}"
+            if amount is not None:
+                base += f" of {amount:.2f}"
+            return base
 
-        sentence_scores = {}
-        sentences = sent_tokenize(text)
+            # Clean and normalize text
+        text = text.strip().lower()
 
-        for sentence in sentences:
-            for word in word_tokenize(sentence.lower()):
-                if word in word_frequencies:
-                    sentence_scores[sentence] = sentence_scores.get(sentence, 0) + word_frequencies[word]
+        # Extract key information patterns
+        patterns = [
+            (r'paid (?:for|to) (.*?) (?:with|using|via)', "Paid for {match}"),
+            (r'(?:bought|purchased) (.*?) (?:from|at)', "Purchased {match}"),
+            (r'sent (?:money|payment) (?:to|for) (.*)', "Sent payment to {match}"),
+            (r'(?:received|got) (?:money|payment) (?:from|for) (.*)', "Received payment from {match}")
+        ]
 
-        summary_sentences = heapq.nlargest(3, sentence_scores, key=sentence_scores.get)
-        summary = " ".join(summary_sentences)
+        # Try to match common payment patterns
+        for pattern, template in patterns:
+            match = re.search(pattern, text)
+            if match:
+                summary = template.format(match=match.group(1).capitalize())
+                break
+        else:
+            # Fallback to first 5 words if no pattern matches
+            words = text.split()[:5]
+            summary = ' '.join(words).capitalize()
 
-        return summary[:200] + "..." if len(summary) > 200 else summary
+        # Add context if available
+        if category:
+            summary += f" ({category})"
+        if amount is not None:
+            summary += f" - {amount:.2f}"
+
+        return summary
 
     def parse_with_ai(self, text):
         prompt = f"""Analyze this transaction:
