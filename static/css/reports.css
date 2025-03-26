@@ -29,8 +29,8 @@
         transition: background 0.2s;
     }
     .filter-btn.active {
-        background: var(--primary-color, #3b82f6);
-        color: white;
+    background-color: #2563eb !important; /* Darker blue */
+    color: white;
     }
     .custom-date-filter {
         display: flex;

@@ -1,55 +1,70 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Safely parse data with fallbacks
-    function safeParse(jsonString, fallback) {
-        try {
-            return JSON.parse(jsonString);
-        } catch (e) {
-            console.error('Failed to parse JSON:', e);
-            return fallback;
+document.addEventListener("DOMContentLoaded", function () {
+    // Get the filter buttons
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const applyCustomButton = document.getElementById('applyCustom');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    // Event listener for predefined filters (Last 7 Days, Last 30 Days, etc.)
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active class to the clicked button
+            button.classList.add('active');
+
+            // Get the number of days or custom filter type
+            const days = button.getAttribute('data-days');
+
+            // Update the URL or fetch data based on selected filter
+            applyFilter(days);
+        });
+    });
+
+    // Event listener for custom date range filter
+    applyCustomButton.addEventListener('click', function () {
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        if (startDate && endDate) {
+            applyFilter('custom', startDate, endDate);
+        } else {
+            alert('Please select both start and end dates.');
+        }
+    });
+
+    // Function to apply the selected filter and update the page
+    function applyFilter(days, startDate = null, endDate = null) {
+        // Prepare the URL parameters based on the selected filter
+        let url = new URL(window.location.href);
+        if (days === 'custom') {
+            url.searchParams.set('startDate', startDate);
+            url.searchParams.set('endDate', endDate);
+        } else {
+            url.searchParams.set('days', days);
+        }
+
+        // Reload the page with the updated filter parameters
+        window.location.href = url.toString();
+    }
+
+    // Add the active class to the filter button based on the URL parameter
+    function setActiveFilterFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const days = urlParams.get('days');
+
+        if (days) {
+            filterButtons.forEach(button => {
+                // Remove active class from all buttons
+                button.classList.remove('active');
+                // Add active class to the corresponding button based on the "days" parameter
+                if (button.getAttribute('data-days') === days) {
+                    button.classList.add('active');
+                }
+            });
         }
     }
 
-    // Get chart data with fallback values
-    const chartData = {
-        categories: safeParse('{{ categories|escapejs }}', ['No Data']),
-        categoryAmounts: safeParse('{{ category_amounts|escapejs }}', [0]),
-        months: safeParse('{{ months|escapejs }}', ['Jan 2023']),
-        monthlyIncome: safeParse('{{ monthly_income|escapejs }}', [0]),
-        monthlyExpenses: safeParse('{{ monthly_expenses|escapejs }}', [0]),
-        totalIncome: parseFloat('{{ total_income|default:0 }}'),
-        totalExpenses: parseFloat('{{ total_expenses|default:0 }}')
-    };
-
-    // Initialize charts with the safe data
-    new Chart(document.getElementById('categoryChart'), {
-        type: 'doughnut',
-        data: {
-            labels: chartData.categories,
-            datasets: [{
-                data: chartData.categoryAmounts,
-                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
-            }]
-        }
-    });
-
-    new Chart(document.getElementById('trendChart'), {
-        type: 'line',
-        data: {
-            labels: chartData.months,
-            datasets: [
-                {
-                    label: 'Income',
-                    data: chartData.monthlyIncome,
-                    borderColor: '#10b981',
-                    tension: 0.1
-                },
-                {
-                    label: 'Expenses',
-                    data: chartData.monthlyExpenses,
-                    borderColor: '#ef4444',
-                    tension: 0.1
-                }
-            ]
-        }
-    });
+    // Set the active filter on page load
+    setActiveFilterFromUrl();
 });

@@ -4,12 +4,10 @@ from .forms import TransactionForm
 from django.utils import timezone
 from django.contrib import messages
 from .ai_processor import TransactionParser
-from datetime import timedelta
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
-from datetime import datetime
+from datetime import date, timedelta, datetime
 import json
-from django.core.serializers.json import DjangoJSONEncoder
 
 def home(request):
     today = timezone.now().date()
@@ -86,94 +84,88 @@ def delete_transaction(request, transaction_id):
 
 
 def reports(request):
-    # Get filter parameters
-    filter_type = request.GET.get('type', '7')
-    start_date, end_date = get_date_range(filter_type, request)
+    # Default filter: last 7 days
+    days = request.GET.get('days')
+    start_date = None
+    end_date = date.today()
 
-    # Filter transactions based on date range
-    transactions = Transaction.objects.filter(date_created__range=(start_date, end_date))
+    # Custom date range
+    if request.GET.get('startDate') and request.GET.get('endDate'):
+        try:
+            start_date = datetime.strptime(request.GET.get('startDate'), "%Y-%m-%d").date()
+            end_date = datetime.strptime(request.GET.get('endDate'), "%Y-%m-%d").date()
+        except ValueError:
+            start_date = date.today() - timedelta(days=7)
+    elif days:
+        if days == "thismonth":
+            start_date = end_date.replace(day=1)
+        elif days == "thisyear":
+            start_date = end_date.replace(month=1, day=1)
+        elif days == "7":
+            start_date = end_date - timedelta(days=7)
+        elif days == "30":
+            start_date = end_date - timedelta(days=30)
+        elif days == "365":
+            start_date = end_date - timedelta(days=365)
+        else:
+            # default fallback
+            start_date = end_date - timedelta(days=7)
+    else:
+        start_date = end_date - timedelta(days=7)
 
-    # Calculate totals using aggregation
-    total_income = float(transactions.filter(transaction_type='Income')
-                         .aggregate(Sum('amount'))['amount__sum'] or 0.00)
-    total_expenses = float(transactions.filter(transaction_type='Expense')
-                           .aggregate(Sum('amount'))['amount__sum'] or 0.00)
+    # Filter transactions based on the selected date range
+    transactions = Transaction.objects.filter(date_created__date__gte=start_date, date_created__date__lte=end_date)
 
-    # Category Breakdown
-    category_data = transactions.values('category').annotate(total=Sum('amount')).order_by('category')
+    # Calculate totals for income and expenses
+    totals = transactions.values('transaction_type').annotate(total=Sum('amount'))
+    total_income = 0
+    total_expenses = 0
+    for entry in totals:
+        if entry['transaction_type'] == "Income":
+            total_income = entry['total'] or 0
+        elif entry['transaction_type'] == "Expense":
+            total_expenses = entry['total'] or 0
 
-    # Monthly Trends
-    monthly_data = transactions.annotate(
-        month=TruncMonth('date_created')
-    ).values('month', 'transaction_type').annotate(
-        total=Sum('amount')
-    ).order_by('month')
+    net_balance = total_income - total_expenses
 
-    # Prepare data for charts
-    months = sorted(list(set(item['month'] for item in monthly_data)))
-    monthly_income = [
-        next((item['total'] for item in monthly_data
-              if item['month'] == month and item['transaction_type'] == 'Income'), 0)
-        for month in months
-    ]
-    monthly_expenses = [
-        next((item['total'] for item in monthly_data
-              if item['month'] == month and item['transaction_type'] == 'Expense'), 0)
-        for month in months
-    ]
+    # Group transactions by category (for expenses only or all transactions as needed)
+    category_data = transactions.filter(transaction_type="Expense").values('category').annotate(total=Sum('amount'))
+    categories = []
+    category_amounts = []
+    for item in category_data:
+        categories.append(item['category'])
+        category_amounts.append(float(item['total'] or 0))
 
-    # Format months for display
-    formatted_months = [month.strftime('%b %Y') for month in months]
-    default_data = {
-        'categories': ['No Data'],
-        'category_amounts': [0],
-        'months': [timezone.now().strftime('%b %Y')],
-        'monthly_income': [0],
-        'monthly_expenses': [0]
-    }
+    # Aggregate monthly income and expenses for trend chart
+    monthly_data = transactions.annotate(month=TruncMonth('date_created')).values('month', 'transaction_type').annotate(
+        total=Sum('amount')).order_by('month')
+
+    # Prepare dictionaries to accumulate monthly values
+    monthly_income_dict = {}
+    monthly_expenses_dict = {}
+
+    for entry in monthly_data:
+        month_str = entry['month'].strftime("%B %Y")
+        if entry['transaction_type'] == "Income":
+            monthly_income_dict[month_str] = float(entry['total'] or 0)
+        else:
+            monthly_expenses_dict[month_str] = float(entry['total'] or 0)
+
+    # Create a sorted list of months within the date range
+    months_set = set(list(monthly_income_dict.keys()) + list(monthly_expenses_dict.keys()))
+    months = sorted(months_set, key=lambda d: datetime.strptime(d, "%B %Y"))
+
+    monthly_income = [monthly_income_dict.get(m, 0) for m in months]
+    monthly_expenses = [monthly_expenses_dict.get(m, 0) for m in months]
+
     context = {
-        'total_income': total_income,
-        'total_expenses': total_expenses,
-        'net_balance': total_income - total_expenses,
-        'categories': json.dumps(
-            [item['category'] for item in category_data] if category_data else default_data['categories'],
-            cls=DjangoJSONEncoder
-        ),
-        'category_amounts': json.dumps(
-            [float(item['total']) for item in category_data] if category_data else default_data['category_amounts'],
-            cls=DjangoJSONEncoder
-        ),
-        'months': json.dumps(
-            formatted_months or ['No Data'],
-            cls=DjangoJSONEncoder
-        ),
-        'monthly_income': json.dumps(
-            monthly_income or [0],
-            cls=DjangoJSONEncoder
-        ),
-        'monthly_expenses': json.dumps(
-            monthly_expenses or [0],
-            cls=DjangoJSONEncoder
-        ),
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "net_balance": net_balance,
+        "categories_json": categories,
+        "category_amounts_json": category_amounts,
+        "months_json": months,
+        "monthly_income_json": monthly_income,
+        "monthly_expenses_json": monthly_expenses,
     }
-    return render(request, 'reports.html', context)
-
-
-def get_date_range(filter_type, request):
-    today = timezone.now().date()
-    try:
-        if filter_type == 'custom':
-            start = datetime.strptime(request.GET.get('start'), '%Y-%m-%d').date()
-            end = datetime.strptime(request.GET.get('end'), '%Y-%m-%d').date()
-            return (start, end)
-
-        date_map = {
-            '7': (today - timedelta(days=7), today),
-            '30': (today - timedelta(days=30), today),
-            '365': (today - timedelta(days=365), today),
-            'thismonth': (today.replace(day=1), today),
-            'thisyear': (today.replace(month=1, day=1), today),
-        }
-        return date_map.get(filter_type, (today - timedelta(days=7), today))
-    except (ValueError, TypeError):
-        return (today - timedelta(days=7), today)
+    return render(request, "reports.html", context)

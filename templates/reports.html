@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
 
 {% block main_content %}
-
-<!-- Main Navigation (Same as home.html) -->
+<!-- Main Navigation -->
 <nav class="nav-header">
     <h1>AI MoneyMonitor</h1>
     <div class="nav-links">
@@ -11,19 +12,18 @@
         <a href="/reports">Reports</a>
     </div>
 </nav>
+
 <div id="chart-data"
-     data-categories="{{ categories|escapejs }}"
-     data-category-amounts="{{ category_amounts|escapejs }}"
-     data-months="{{ months|escapejs }}"
-     data-monthly-income="{{ monthly_income|escapejs }}"
-     data-monthly-expenses="{{ monthly_expenses|escapejs }}"
+     data-categories="{{ categories_json|safe }}"
+     data-category-amounts="{{ category_amounts_json|safe }}"
+     data-months="{{ months_json|safe }}"
+     data-monthly-income="{{ monthly_income_json|safe }}"
+     data-monthly-expenses="{{ monthly_expenses_json|safe }}"
      data-total-income="{{ total_income }}"
      data-total-expenses="{{ total_expenses }}">
 </div>
 
-
 <div class="reports-container">
-
     <!-- Date Filter Section -->
     <div class="date-filters">
         <button class="filter-btn active" data-days="7">Last 7 Days</button>
@@ -92,7 +92,5 @@
     </div>
 </div>
 
-
-
-
+<script src="{% static 'js/reports.js' %}"></script>
 {% endblock %}
