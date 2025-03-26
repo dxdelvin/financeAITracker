@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
+
 <link rel="stylesheet" href="{% static 'css/reports.css' %}">
 
 {% block main_content %}
-<!-- Main Navigation -->
 <nav class="nav-header">
     <h1>AI MoneyMonitor</h1>
     <div class="nav-links">
@@ -13,22 +13,19 @@
     </div>
 </nav>
 
+<!-- Pass data in simple format -->
 <div id="chart-data"
-     data-categories="{{ categories_json|safe }}"
-     data-category-amounts="{{ category_amounts_json|safe }}"
-     data-months="{{ months_json|safe }}"
-     data-monthly-income="{{ monthly_income_json|safe }}"
-     data-monthly-expenses="{{ monthly_expenses_json|safe }}"
      data-total-income="{{ total_income }}"
-     data-total-expenses="{{ total_expenses }}">
+     data-total-expenses="{{ total_expenses }}"
+     data-transactions="{{ transactions|safe }}">
 </div>
 
 <div class="reports-container">
-    <!-- Date Filter Section -->
+    <!-- Date Filters -->
     <div class="date-filters">
         <button class="filter-btn active" data-days="7">Last 7 Days</button>
         <button class="filter-btn" data-days="30">Last 30 Days</button>
-        <button class="filter-btn" data-days="365">Last Year</button>
+        <button class="filter-btn" data-days="lastyear">Last Year</button>
         <button class="filter-btn" data-days="thismonth">This Month</button>
         <button class="filter-btn" data-days="thisyear">This Year</button>
 
@@ -40,15 +37,21 @@
         </div>
     </div>
 
-    <!-- Summary Cards -->
+    <!-- Summary Section -->
     <div class="dashboard-summary">
         <div class="summary-card">
             <h3>Total Income</h3>
             <h2>${{ total_income|floatformat:2 }}</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="income-progress"></div>
+            </div>
         </div>
         <div class="summary-card">
             <h3>Total Expenses</h3>
             <h2>${{ total_expenses|floatformat:2 }}</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="expenses-progress"></div>
+            </div>
         </div>
         <div class="summary-card">
             <h3>Net Balance</h3>
@@ -56,41 +59,25 @@
         </div>
     </div>
 
-    <!-- Charts Grid -->
-    <div class="charts-grid">
-        <!-- Income vs Expenses Chart -->
-        <div class="chart-card">
-            <h3>Income vs Expenses</h3>
-            <div class="chart-container">
-                <canvas id="incomeExpenseChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Category Breakdown -->
-        <div class="chart-card">
-            <h3>Category Breakdown</h3>
-            <div class="chart-container">
-                <canvas id="categoryChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Monthly Trend -->
-        <div class="chart-card">
-            <h3>Monthly Trend</h3>
-            <div class="chart-container">
-                <canvas id="trendChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Transaction Type Distribution -->
-        <div class="chart-card">
-            <h3>Transaction Types</h3>
-            <div class="chart-container">
-                <canvas id="typeChart"></canvas>
-            </div>
-        </div>
+    <!-- Transaction Table -->
+    <div class="transactions-table">
+        <h3>Recent Transactions</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody id="transaction-body">
+                <!-- Transactions will be inserted here -->
+            </tbody>
+        </table>
     </div>
 </div>
 
 <script src="{% static 'js/reports.js' %}"></script>
+
 {% endblock %}
